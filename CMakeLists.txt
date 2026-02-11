@@ -5,10 +5,10 @@ project(nonogram-solver)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# cxxopts
+# Add cxxopts
 include_directories("third_party/cxxopts/include")
 
-# OpenCV
+# Add OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
