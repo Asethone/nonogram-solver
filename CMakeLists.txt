@@ -15,6 +15,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # Add executable
 add_executable(solver
     src/main.cpp
+    src/controls.cpp
+    src/screen_handler.cpp
 )
 
 # Link libraries
@@ -24,5 +26,5 @@ target_link_libraries(solver
 
 # Print build information
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
-message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
-message(STATUS "OpenCV includes: ${OpenCV_INCLUDE_DIRS}")
+# message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
+# message(STATUS "OpenCV includes: ${OpenCV_INCLUDE_DIRS}")
