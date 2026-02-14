@@ -2,13 +2,20 @@
 #include <cxxopts.hpp>
 
 #include "controls.h"
-#include "screen_handler.h"
+#include "image.h"
 
 // captures the answer to the nonogram and saves it into generated png
-void captureAnswer(bool is_colored) {
-    adb::takeScreenshot();
-    ScreenHandler::readAnswer();
+void captureAnswer(unsigned width, unsigned height, bool is_colored) {
+    Image image = Image::fromScreenshot();
+    image.cropAnswer().saveToBitmap(width, height);
 }
+
+/* *
+ * TODO:
+ * - fill colored nonograms
+ * - handle custom background colors
+ *
+ * */
 
 int main(int argc, char* argv[]) {
     cxxopts::Options options("solver", "Solve nonogram");
@@ -38,19 +45,19 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     // width and height
-    unsigned canvas_width = args["width"].as<unsigned>();
-    unsigned canvas_height = args["height"].as<unsigned>();
+    unsigned nonogram_width = args["width"].as<unsigned>();
+    unsigned nonogram_height = args["height"].as<unsigned>();
     // colored
     bool is_colored = args["colored"].as<bool>();
 
     // check if device is connected
-    if (!adb::checkDevice()) {
-        std::println("Error: please connect your device via USB.");
-        return 0;
-    }
+    // if (!adb::checkDevice()) {
+    //     std::println("Error: please connect your device via USB.");
+    //     return 0;
+    // }
 
     if (is_capture_mode) {
-        captureAnswer(is_colored);
+        captureAnswer(nonogram_width, nonogram_height, is_colored);
     } else if (is_paint_mode) {
         // TODO
     } else {

@@ -16,7 +16,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(solver
     src/main.cpp
     src/controls.cpp
-    src/screen_handler.cpp
+    src/image.cpp
 )
 
 # Link libraries
