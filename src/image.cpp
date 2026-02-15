@@ -87,7 +87,7 @@ Image Image::getMask(bool is_inverted) {
 }
 
 Image Image::reduceNoise() {
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
     cv::morphologyEx(mat_, mat_, cv::MORPH_CLOSE, kernel);
     cv::morphologyEx(mat_, mat_, cv::MORPH_OPEN, kernel);
     return *this;
