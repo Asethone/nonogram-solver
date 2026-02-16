@@ -2,10 +2,13 @@
 
 #include "controls.h"
 
-Image::Image(const cv::Mat &mat) : mat_(mat) {}
+Image::Image() {}
+
+Image::Image(const cv::Mat& mat) : mat_(mat) {}
+
+Image::Image(const cv::Mat& mat, const cv::Rect& rect) : mat_(mat), rect_(rect) {}
 
 Image Image::fromScreenshot() {
-    adb::takeScreenshot();
     cv::Mat image = cv::imread("screenshot.png");
     return Image(std::move(image));
 }
@@ -51,7 +54,32 @@ void Image::saveToBitmap(unsigned nonogram_width, unsigned nonogram_height) {
     cv::imwrite("bitmap.bmp", bitmap);
 }
 
-Image Image::cropAnswer() {
+Image Image::getMask(int thresh, bool is_inverted) {
+    // create mask on grayscale image
+    cv::Mat gray;
+    cv::cvtColor(mat_, gray, cv::COLOR_BGR2GRAY);
+    // create mask
+    cv::Mat mask;
+    int threshold_type = (is_inverted ? cv::THRESH_BINARY_INV : cv::THRESH_BINARY);
+    cv::threshold(gray, mask, thresh, 255, threshold_type);
+    return Image(std::move(mask));
+}
+
+Image Image::reduceNoise() {
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
+    cv::morphologyEx(mat_, mat_, cv::MORPH_CLOSE, kernel);
+    cv::morphologyEx(mat_, mat_, cv::MORPH_OPEN, kernel);
+    return *this;
+}
+
+namespace {
+    // translates child rect to the coordinate system of parent rect
+    cv::Rect toAbsoluteRect(cv::Rect parent, cv::Rect child) {
+        return cv::Rect(child + cv::Point(parent.x, parent.y));
+    }
+}
+
+Image Image::extractAnswer() {
     // init sizes
     const int width = mat_.cols;
     const int height = mat_.rows;
@@ -66,29 +94,49 @@ Image Image::cropAnswer() {
     cv::Mat canvas = mat_(bounding_box_canvas);
     mask = mask(bounding_box_canvas);
     // crop to answer picture
-    // TODO: may actually crop wrong when nonogram has border cells colored with color close to bg
+    // TODO: may actually crop wrong when nonogram has border cells colored with colors close to bg
     cv::bitwise_not(mask, mask);
     cv::Rect bounding_box_picture = cv::boundingRect(mask);
     cv::Mat picture = canvas(bounding_box_picture);
 
-    return Image(std::move(picture));
+    return Image(
+        std::move(picture),
+        toAbsoluteRect(bounding_box_canvas, bounding_box_picture)
+    );
 }
 
-Image Image::getMask(bool is_inverted) {
-    // create mask on grayscale image
-    cv::Mat mat_gray;
-    cv::cvtColor(mat_, mat_gray, cv::COLOR_BGR2GRAY);
-    // create mask itself
-    static constexpr int kMaxWhiteValue = 240;
-    cv::Mat mask;
-    int threshold_type = (is_inverted ? cv::THRESH_BINARY_INV : cv::THRESH_BINARY);
-    cv::threshold(mat_gray, mask, kMaxWhiteValue, 255, threshold_type);
-    return Image(std::move(mask));
+Image Image::extractNonogram() {
+    Image mask_image = getMask();
+    cv::Mat mask = mask_image.mat_;
+    // reduce noise on white regions
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+
+    // extract white horizontal lines that wrap canvas
+    /* TODO: in case when the device is in horizontal orientation or
+     *  the nonogram is too tall it sticks to the top-bottom borders,
+     *  we should go for vertical lines instead
+     */
+    cv::Mat horizontal = mask.clone();
+    int horizontal_size = mat_.cols;
+    cv::Mat horizontal_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(horizontal_size, 1));
+    cv::erode(horizontal, horizontal, horizontal_structure);
+    // get canvas bounding box
+    cv::Rect bounding_box_canvas = cv::boundingRect(horizontal);
+    if (bounding_box_canvas.area() == 0) {
+        cv::imwrite("mask.png", mask);
+        throw std::runtime_error("error: unable to extract canvas");
+    }
+
+    // remove white margins
+    cv::Mat canvas = mat_(bounding_box_canvas);
+    mask = Image(canvas).getMask(100, true).mat_;
+    cv::Rect bounding_box_nonogram = cv::boundingRect(mask);
+
+    return Image(
+        std::move(canvas(bounding_box_nonogram)),
+        toAbsoluteRect(bounding_box_canvas, bounding_box_nonogram)
+    );
 }
 
-Image Image::reduceNoise() {
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
-    cv::morphologyEx(mat_, mat_, cv::MORPH_CLOSE, kernel);
-    cv::morphologyEx(mat_, mat_, cv::MORPH_OPEN, kernel);
-    return *this;
-}
+Image Image::extractGrid(cv::Scalar& bg_color) { return Image(); }

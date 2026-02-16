@@ -17,6 +17,7 @@ add_executable(solver
     src/main.cpp
     src/controls.cpp
     src/image.cpp
+    src/screen.cpp
 )
 
 # Link libraries

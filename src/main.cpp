@@ -2,27 +2,20 @@
 #include <cxxopts.hpp>
 
 #include "controls.h"
-#include "image.h"
-
-// captures the answer to the nonogram and saves it into generated png
-void captureAnswer(unsigned width, unsigned height, bool is_colored) {
-    Image image = Image::fromScreenshot();
-    image.cropAnswer().saveToBitmap(width, height);
-}
+#include "screen.h"
 
 /* *
  * TODO:
  * - fill colored nonograms
  * - handle custom background colors
- *
  * */
 
 int main(int argc, char* argv[]) {
     cxxopts::Options options("solver", "Solve nonogram");
     options.add_options()
         ("help", "Print help")
-        ("width", "Width of the nonogram", cxxopts::value<unsigned>())
-        ("height", "Height of the nonogram", cxxopts::value<unsigned>())
+        ("width", "Width of the nonogram", cxxopts::value<int>())
+        ("height", "Height of the nonogram", cxxopts::value<int>())
         ("c,capture", "Capture mode", cxxopts::value<bool>())
         ("p,paint", "Paint mode", cxxopts::value<bool>())
         ("colored", "Colored nonogram (default black and white)", cxxopts::value<bool>());
@@ -45,8 +38,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     // width and height
-    unsigned nonogram_width = args["width"].as<unsigned>();
-    unsigned nonogram_height = args["height"].as<unsigned>();
+    int nonogram_width = args["width"].as<int>();
+    int nonogram_height = args["height"].as<int>();
     // colored
     bool is_colored = args["colored"].as<bool>();
 
@@ -56,10 +49,11 @@ int main(int argc, char* argv[]) {
     //     return 0;
     // }
 
+    Screen screen;
     if (is_capture_mode) {
-        captureAnswer(nonogram_width, nonogram_height, is_colored);
+        screen.captureAnswer(nonogram_width, nonogram_height, is_colored);
     } else if (is_paint_mode) {
-        // TODO
+        screen.paint(nonogram_width, nonogram_height, is_colored);
     } else {
         std::println("Error: specify only one mode option");
         return 0;
