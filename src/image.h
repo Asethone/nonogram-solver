@@ -12,10 +12,11 @@ public:
     // takes screenshot and initialize image from it
     static Image fromScreenshot();
     // loads previously saved bitmap
-    static Image fromBitmap();
+    // if is_colored is false loads grayscale matrix
+    static Image fromBitmap(bool is_colored);
 
     // save pixels to bitmap
-    void saveToBitmap(unsigned nonogram_width, unsigned nonogram_height);
+    void saveToBitmap(int nonogram_width, int nonogram_height);
     // calculate image mask to help mask out background cells
     // if `is_inverted` is false, background colored cells are `1`
     Image getMask(int thresh = 240, bool is_inverted = false);

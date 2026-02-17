@@ -20,5 +20,31 @@ void Screen::captureAnswer(int width, int height, bool is_colored) {
 void Screen::paint(int width, int height, bool is_colored) {
     Image nonogram = screen_image_.extractNonogram();
 
-    cv::imwrite("debug.png", screen_image_.mat_(nonogram.rect_));
+    cv::Scalar bg_color;
+    Image grid = nonogram.extractGrid(bg_color);
+    std::println("background color is {}, {}, {}", bg_color[0], bg_color[1], bg_color[2]);
+
+    const double cell_width = (double)grid.mat_.cols / width;
+    const double cell_height = (double)grid.mat_.rows / height;
+    double x = grid.rect_.x + cell_width / 2;
+    double y = grid.rect_.y + cell_height / 2;
+    if (is_colored) {
+        // TODO
+    } else {
+        cv::Mat answer = Image::fromBitmap(is_colored).mat_;
+        // for debugging
+        cv::Mat debug = screen_image_.mat_.clone();
+        // start painting
+        for (int row = 0; row < height; row++) {
+            x = grid.rect_.x + cell_width / 2;
+            for (int col = 0; col < width; col++, x += cell_width) {
+                if (answer.at<uchar>(cv::Point(col, row)) < 100) {
+                    adb::tap(x, y);
+                    cv::drawMarker(debug, {(int)x, (int)y}, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, cell_width / 2);
+                }
+            }
+            y += cell_height;
+        }
+        cv::imwrite("grid.png", debug);
+    }
 }

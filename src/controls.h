@@ -1,8 +1,5 @@
 #pragma once
 
-#include <cstdlib>
-#include <fstream>
-#include <format>
 #include <chrono>
 
 using namespace std::literals;
@@ -14,7 +11,7 @@ namespace adb {
     // take a screenshot
     void takeScreenshot();
 
-    // do a single tap
+    // do a single tap (slow due to the start of adb shell session)
     void tap(unsigned x, unsigned y);
 
     // do a swipe from one point to another

@@ -1,5 +1,9 @@
 #include "controls.h"
 
+#include <cstdlib>
+#include <fstream>
+#include <format>
+
 namespace adb {
     bool checkDevice() {
         std::system("adb devices > devices.txt");

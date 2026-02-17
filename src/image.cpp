@@ -13,18 +13,19 @@ Image Image::fromScreenshot() {
     return Image(std::move(image));
 }
 
-Image Image::fromBitmap() {
-    return Image(cv::Mat());
+Image Image::fromBitmap(bool is_colored) {
+    cv::Mat image = cv::imread("bitmap.bmp", (is_colored ? cv::IMREAD_COLOR_BGR : cv::IMREAD_GRAYSCALE));
+    return Image(std::move(image));
 }
 
-void Image::saveToBitmap(unsigned nonogram_width, unsigned nonogram_height) {
+void Image::saveToBitmap(int nonogram_width, int nonogram_height) {
     const int width = mat_.cols;
     const int height = mat_.rows;
     const double cell_width = (double)width / nonogram_width;
     const double cell_height = (double)height / nonogram_height;
 
     cv::Mat debug = mat_.clone();
-    // make gray copy to be able to skip bg cells
+    // make mask to be able to skip bg cells
     cv::Mat mask = getMask().reduceNoise().mat_;
     // fill result bitmap
     cv::Mat bitmap(nonogram_height, nonogram_width, CV_8UC3, cv::Scalar(255, 255, 255));
@@ -106,10 +107,11 @@ Image Image::extractAnswer() {
 }
 
 Image Image::extractNonogram() {
-    Image mask_image = getMask();
+    constexpr int kDarkestPaperPixelGrayValue = 230;
+    Image mask_image = getMask(kDarkestPaperPixelGrayValue);
     cv::Mat mask = mask_image.mat_;
     // reduce noise on white regions
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 5));
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 
     // extract white horizontal lines that wrap canvas
@@ -118,7 +120,7 @@ Image Image::extractNonogram() {
      *  we should go for vertical lines instead
      */
     cv::Mat horizontal = mask.clone();
-    int horizontal_size = mat_.cols;
+    const int horizontal_size = mat_.cols;
     cv::Mat horizontal_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(horizontal_size, 1));
     cv::erode(horizontal, horizontal, horizontal_structure);
     // get canvas bounding box
@@ -139,4 +141,55 @@ Image Image::extractNonogram() {
     );
 }
 
-Image Image::extractGrid(cv::Scalar& bg_color) { return Image(); }
+Image Image::extractGrid(cv::Scalar& bg_color) {
+    constexpr int kDarkestPaperPixelGrayValue = 230;
+    cv::Mat mask = getMask(kDarkestPaperPixelGrayValue).mat_;
+
+    // extract preview rect
+    cv::Mat horizontal = mask.clone();
+    cv::Mat vertical = mask.clone();
+    // let's assume the preview rect takes up minimum 10% of the nonogram sizes
+    // TODO: that might be pretty rough, better find more reliable solution (detect preview rect black borders?)
+    const int horizontal_size = (int)(mat_.cols * 0.1);
+    const int vertical_size = (int)(mat_.rows * 0.1);
+    cv::Mat horizontal_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(horizontal_size, 1));
+    cv::erode(horizontal, horizontal, horizontal_structure);
+    cv::Mat vertical_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, vertical_size));
+    cv::erode(vertical, vertical, vertical_structure);
+    // merge horizontal & vertical lines into one mask
+    cv::Mat mask_corner_image;
+    cv::bitwise_or(horizontal, vertical, mask_corner_image);
+    // take bounding rect
+    cv::Rect bounding_box_preview = cv::boundingRect(mask_corner_image);
+    if (bounding_box_preview.area() == 0) {
+        cv::imwrite("mask.png", mask);
+        cv::imwrite("mask_corner_image.png", mask_corner_image);
+        throw std::runtime_error("error: unable to extract preview rect");
+    }
+
+    // by default the preview is filled with background color
+    // now we can obtain it taking the center pixel of the preview rect
+    cv::Point preview_center(
+        bounding_box_preview.x + bounding_box_preview.width / 2,
+        bounding_box_preview.y + bounding_box_preview.height / 2
+    );
+    bg_color = mat_.at<cv::Vec3b>(preview_center);
+    // for debugging
+    cv::Mat debug = mat_.clone();
+    cv::drawMarker(debug, preview_center, cv::Scalar(0, 255, 0), cv::MARKER_CROSS);
+    cv::imwrite("nonogram.png", debug);
+
+    // finally, extract the grid
+    int grid_x = 2 * bounding_box_preview.x + bounding_box_preview.width;
+    int grid_y = 2 * bounding_box_preview.y + bounding_box_preview.height;
+    int grid_width = mat_.cols - grid_x - bounding_box_preview.x;
+    int grid_height = mat_.rows - grid_y - bounding_box_preview.y;
+    cv::Rect bounding_box_grid(grid_x, grid_y, grid_width, grid_height);
+
+    if (bounding_box_grid.area() == 0) {
+        cv::imwrite("preview.png", mat_(bounding_box_preview));
+        throw std::runtime_error("error: unable to extract grid");
+    }
+
+    return Image(mat_(bounding_box_grid), toAbsoluteRect(rect_, bounding_box_grid));
+}
