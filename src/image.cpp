@@ -78,6 +78,54 @@ namespace {
     cv::Rect toAbsoluteRect(cv::Rect parent, cv::Rect child) {
         return cv::Rect(child + cv::Point(parent.x, parent.y));
     }
+
+    cv::Rect getLongestHorizontalLine(cv::Mat mat) {
+        cv::Rect res{0, 0, 0, 1};
+        auto update = [&](int len, int x_end, int y) {
+            if (len > res.width) {
+                res.width = len;
+                res.x = x_end - len;
+                res.y = y;
+            }
+        };
+        for (int row = 0; row < mat.rows; row++) {
+            int curr_len = 0;
+            for (int col = 0; col < mat.cols; col++) {
+                if (mat.at<uchar>(cv::Point(col, row))) {
+                    curr_len++;
+                } else {
+                    update(curr_len, col, row);
+                    curr_len = 0;
+                }
+            }
+            update(curr_len, mat.cols, row);
+        }
+        return res;
+    }
+
+    cv::Rect getLongestVerticalLine(cv::Mat mat) {
+        cv::Rect res{0, 0, 1, 0};
+        auto update = [&](int len, int x, int y_end) {
+            if (len > res.height) {
+                res.height = len;
+                res.x = x;
+                res.y = y_end - len;
+            }
+        };
+        for (int col = 0; col < mat.cols; col++) {
+            int curr_len = 0;
+            for (int row = 0; row < mat.rows; row++) {
+                if (mat.at<uchar>(cv::Point(col, row))) {
+                    curr_len++;
+                } else {
+                    update(curr_len, col, row);
+                    curr_len = 0;
+                }
+            }
+            update(curr_len, col, mat.rows);
+        }
+        return res;
+    }
 }
 
 Image Image::extractAnswer() {
@@ -111,8 +159,8 @@ Image Image::extractNonogram() {
     Image mask_image = getMask(kDarkestPaperPixelGrayValue);
     cv::Mat mask = mask_image.mat_;
     // reduce noise on white regions
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 5));
-    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+    // cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 5));
+    // cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 
     // extract white horizontal lines that wrap canvas
     /* TODO: in case when the device is in horizontal orientation or
@@ -123,6 +171,10 @@ Image Image::extractNonogram() {
     const int horizontal_size = mat_.cols;
     cv::Mat horizontal_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(horizontal_size, 1));
     cv::erode(horizontal, horizontal, horizontal_structure);
+
+    // cv::imwrite("mask.png", mask);
+    // cv::imwrite("debug.png", horizontal);
+
     // get canvas bounding box
     cv::Rect bounding_box_canvas = cv::boundingRect(horizontal);
     if (bounding_box_canvas.area() == 0) {
@@ -141,17 +193,17 @@ Image Image::extractNonogram() {
     );
 }
 
-Image Image::extractGrid(cv::Scalar& bg_color) {
-    constexpr int kDarkestPaperPixelGrayValue = 230;
+Image Image::extractGrid(cv::Scalar& bg_color, int width, int height) {
+    constexpr int kDarkestPaperPixelGrayValue = 220;
     cv::Mat mask = getMask(kDarkestPaperPixelGrayValue).mat_;
 
     // extract preview rect
     cv::Mat horizontal = mask.clone();
     cv::Mat vertical = mask.clone();
-    // let's assume the preview rect takes up minimum 10% of the nonogram sizes
+    // let's assume the preview rect takes up slightly bigger size than one grid cell (minimum)
     // TODO: that might be pretty rough, better find more reliable solution (detect preview rect black borders?)
-    const int horizontal_size = (int)(mat_.cols * 0.1);
-    const int vertical_size = (int)(mat_.rows * 0.1);
+    const int horizontal_size = (int)(mat_.cols / width);
+    const int vertical_size = (int)(mat_.rows / height);
     cv::Mat horizontal_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(horizontal_size, 1));
     cv::erode(horizontal, horizontal, horizontal_structure);
     cv::Mat vertical_structure = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, vertical_size));
@@ -159,8 +211,24 @@ Image Image::extractGrid(cv::Scalar& bg_color) {
     // merge horizontal & vertical lines into one mask
     cv::Mat mask_corner_image;
     cv::bitwise_or(horizontal, vertical, mask_corner_image);
-    // take bounding rect
-    cv::Rect bounding_box_preview = cv::boundingRect(mask_corner_image);
+    // instead of taking bounding rect, get longest lines that would correspond to the preview position
+    cv::Rect horizontal_longest = getLongestHorizontalLine(mask_corner_image);
+    cv::Rect vertical_longest = getLongestVerticalLine(mask_corner_image);
+    cv::Rect bounding_box_preview(
+        horizontal_longest.x,
+        vertical_longest.y,
+        horizontal_longest.width,
+        vertical_longest.height
+    );
+
+    // debugging
+    // cv::Mat debug = mat_.clone();
+    // cv::rectangle(debug, horizontal_longest, cv::Scalar(0, 255, 0));
+    // cv::rectangle(debug, vertical_longest, cv::Scalar(0, 0, 255));
+    // cv::imwrite("debug.png", debug);
+    // cv::imwrite("mask.png", mask);
+    // cv::imwrite("mask_corner_image.png", mask_corner_image);
+
     if (bounding_box_preview.area() == 0) {
         cv::imwrite("mask.png", mask);
         cv::imwrite("mask_corner_image.png", mask_corner_image);
@@ -175,9 +243,9 @@ Image Image::extractGrid(cv::Scalar& bg_color) {
     );
     bg_color = mat_.at<cv::Vec3b>(preview_center);
     // for debugging
-    cv::Mat debug = mat_.clone();
-    cv::drawMarker(debug, preview_center, cv::Scalar(0, 255, 0), cv::MARKER_CROSS);
-    cv::imwrite("nonogram.png", debug);
+    // cv::Mat debug = mat_.clone();
+    // cv::drawMarker(debug, preview_center, cv::Scalar(0, 255, 0), cv::MARKER_CROSS);
+    // cv::imwrite("nonogram.png", debug);
 
     // finally, extract the grid
     int grid_x = 2 * bounding_box_preview.x + bounding_box_preview.width;

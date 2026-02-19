@@ -33,7 +33,7 @@ public:
     // retrieve the grid of the nonogram (the actual drawing area)
     // as well as its background color
     // MUST be called on the result of `extractNonogram()` function
-    Image extractGrid(cv::Scalar& bg_color);
+    Image extractGrid(cv::Scalar& bg_color, int width, int height);
 
 public:
     // opencv matrix

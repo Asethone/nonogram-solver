@@ -19,9 +19,10 @@ void Screen::captureAnswer(int width, int height, bool is_colored) {
 
 void Screen::paint(int width, int height, bool is_colored) {
     Image nonogram = screen_image_.extractNonogram();
+    cv::imwrite("nonogram.png", nonogram.mat_);
 
     cv::Scalar bg_color;
-    Image grid = nonogram.extractGrid(bg_color);
+    Image grid = nonogram.extractGrid(bg_color, width, height);
     std::println("background color is {}, {}, {}", bg_color[0], bg_color[1], bg_color[2]);
 
     const double cell_width = (double)grid.mat_.cols / width;
