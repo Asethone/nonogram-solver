@@ -156,7 +156,7 @@ public:
         // send touch down event
         asio::write(socket_, asio::buffer(buf));
         // small delay
-        // std::this_thread::sleep_for(10ms);
+        std::this_thread::sleep_for(5ms);
         // send touch up event
         buf[1] = 0x01; // AKEY_EVENT_ACTION_UP
         asio::write(socket_, asio::buffer(buf));
