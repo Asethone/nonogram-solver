@@ -31,6 +31,7 @@ void Screen::paint(int width, int height, bool is_colored) {
     if (is_colored) {
         // TODO
     } else {
+        ControlSession ctrl(screen_image_.mat_.cols, screen_image_.mat_.rows);
         cv::Mat answer = Image::fromBitmap(is_colored).mat_;
         // for debugging
         cv::Mat debug = screen_image_.mat_.clone();
@@ -38,8 +39,8 @@ void Screen::paint(int width, int height, bool is_colored) {
         for (int row = 0; row < height; row++) {
             x = grid.rect_.x + cell_width / 2;
             for (int col = 0; col < width; col++, x += cell_width) {
-                if (answer.at<uchar>(cv::Point(col, row)) < 100) {
-                    adb::tap(x, y);
+                if (answer.at<uchar>(cv::Point(col, row)) < 230) {
+                    ctrl.tap(x, y);
                     cv::drawMarker(debug, {(int)x, (int)y}, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, cell_width / 2);
                 }
             }
