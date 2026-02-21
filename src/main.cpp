@@ -38,6 +38,12 @@ int main(int argc, char* argv[]) {
         std::println("Error: one mode option should be specified");
         return 0;
     }
+
+    if (is_capture_mode && is_paint_mode) {
+        std::println("Error: specify only one mode option");
+        return 0;
+    }
+
     // width and height
     int nonogram_width = args["width"].as<int>();
     int nonogram_height = args["height"].as<int>();
@@ -55,9 +61,6 @@ int main(int argc, char* argv[]) {
         screen.captureAnswer(nonogram_width, nonogram_height, is_colored);
     } else if (is_paint_mode) {
         screen.paint(nonogram_width, nonogram_height, is_colored);
-    } else {
-        std::println("Error: specify only one mode option");
-        return 0;
     }
 
     return 0;

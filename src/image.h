@@ -1,6 +1,7 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <vector>
 
 class Image {
 public:
@@ -16,7 +17,7 @@ public:
     static Image fromBitmap(bool is_colored);
 
     // save pixels to bitmap
-    void saveToBitmap(int nonogram_width, int nonogram_height);
+    void saveToBitmap(int nonogram_width, int nonogram_height, bool is_colored);
     // calculate image mask to help mask out background cells
     // if `is_inverted` is false, background colored cells are `1`
     Image getMask(int thresh = 240, bool is_inverted = false);
@@ -33,7 +34,10 @@ public:
     // retrieve the grid of the nonogram (the actual drawing area)
     // as well as its background color
     // MUST be called on the result of `extractNonogram()` function
-    Image extractGrid(cv::Scalar& bg_color, int width, int height);
+    Image extractGrid(cv::Vec3b& bg_color, int width, int height);
+    // retrieve the palette of the nonogram
+    // and put all the colors in corresponding order inside the vector
+    Image extractPalette(std::vector<cv::Vec3b>& palette_colors, std::vector<cv::Point>& color_coords, cv::Rect nonogram_rect);
 
 public:
     // opencv matrix
