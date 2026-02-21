@@ -137,7 +137,7 @@ public:
     }
 
 public:
-    void tap(uint16_t x, uint16_t y) {
+    void tap(uint16_t x, uint16_t y, std::chrono::milliseconds duration) {
         // buf is serialized data that is sent to the server
         // https://github.com/Genymobile/scrcpy/blob/master/app/tests/test_control_msg_serialize.c
         uint8_t buf[] = {
@@ -156,7 +156,7 @@ public:
         // send touch down event
         asio::write(socket_, asio::buffer(buf));
         // small delay
-        std::this_thread::sleep_for(5ms);
+        std::this_thread::sleep_for(duration);
         // send touch up event
         buf[1] = 0x01; // AKEY_EVENT_ACTION_UP
         asio::write(socket_, asio::buffer(buf));
@@ -188,9 +188,9 @@ ControlSession::~ControlSession() {}
 
 void ControlSession::stop() { internal_.reset(); }
 
-void ControlSession::tap(uint16_t x, uint16_t y) {
+void ControlSession::tap(uint16_t x, uint16_t y, std::chrono::milliseconds duration) {
     if (!internal_)
         return;
 
-    internal_->tap(x, y);
+    internal_->tap(x, y, duration);
 }

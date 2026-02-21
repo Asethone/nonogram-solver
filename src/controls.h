@@ -47,7 +47,7 @@ public:
 
 public:
     // do a single tap
-    void tap(uint16_t x, uint16_t y);
+    void tap(uint16_t x, uint16_t y, std::chrono::milliseconds duration = 5ms);
 
 private:
     std::unique_ptr<ControlSessionInternal> internal_;
