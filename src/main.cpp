@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         ("height", "Height of the nonogram", cxxopts::value<int>())
         ("c,capture", "Capture mode", cxxopts::value<bool>())
         ("p,paint", "Paint mode", cxxopts::value<bool>())
-        ("colored", "Colored nonogram (default black and white)", cxxopts::value<bool>());
+        ("o,colored", "Colored nonogram (default black and white)", cxxopts::value<bool>());
 
     options.parse_positional({"width", "height"});
     auto args = options.parse(argc, argv);
@@ -35,14 +35,12 @@ int main(int argc, char* argv[]) {
     bool is_paint_mode = args["paint"].as<bool>();
 
     if (!is_capture_mode && !is_paint_mode) {
-        std::println("Error: one mode option should be specified");
-        return 0;
+        std::println("No mode options were specified. Going with multimode.");
+        is_capture_mode = true;
+        is_paint_mode = true;
     }
 
-    if (is_capture_mode && is_paint_mode) {
-        std::println("Error: specify only one mode option");
-        return 0;
-    }
+    bool is_multimode = (is_capture_mode && is_paint_mode);
 
     // width and height
     int nonogram_width = args["width"].as<int>();
@@ -51,16 +49,18 @@ int main(int argc, char* argv[]) {
     bool is_colored = args["colored"].as<bool>();
 
     // check if device is connected
-    // if (!adb::checkDevice()) {
-    //     std::println("Error: please connect your device via USB.");
-    //     return 0;
-    // }
+    if (!adb::checkDevice()) {
+        std::println("Error: please connect your device via USB.");
+        return 1;
+    }
 
+    // run
     Screen screen;
     if (is_capture_mode) {
         screen.captureAnswer(nonogram_width, nonogram_height, is_colored);
-    } else if (is_paint_mode) {
-        screen.paint(nonogram_width, nonogram_height, is_colored);
+    }
+    if (is_paint_mode) {
+        screen.paint(nonogram_width, nonogram_height, is_colored, is_multimode);
     }
 
     return 0;

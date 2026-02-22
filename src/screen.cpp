@@ -38,7 +38,16 @@ namespace {
     }
 }
 
-void Screen::paint(int width, int height, bool is_colored) {
+void Screen::paint(int width, int height, bool is_colored, bool is_multimode) {
+    // if in multimode, tap to the center of the screen once to hide the answer
+    if (is_multimode) {
+        adb::tap(screen_image_.mat_.cols / 2, screen_image_.mat_.rows / 2);
+        // wait until fade animation finishes
+        std::this_thread::sleep_for(200ms);
+        // update the screen
+        update();
+    }
+
     // parse nonogram
     Image nonogram = screen_image_.extractNonogram();
     cv::imwrite("nonogram.png", nonogram.mat_);

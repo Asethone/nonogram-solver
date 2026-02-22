@@ -18,7 +18,7 @@ public:
 
     // paints the answer on the nonogram grid
     // width and height correspond to the actual nonogram sizes
-    void paint(int width, int height, bool is_colored);
+    void paint(int width, int height, bool is_colored, bool is_multimode);
 
 private:
     Image screen_image_;
