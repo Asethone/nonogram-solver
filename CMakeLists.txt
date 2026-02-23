@@ -29,5 +29,3 @@ target_link_libraries(solver
 
 # Print build information
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
-# message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
-# message(STATUS "OpenCV includes: ${OpenCV_INCLUDE_DIRS}")

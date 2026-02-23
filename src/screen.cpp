@@ -54,7 +54,7 @@ void Screen::paint(int width, int height, bool is_colored, bool is_multimode) {
     // parse grid and background color
     cv::Vec3b bg_color;
     Image grid = nonogram.extractGrid(bg_color, width, height);
-    std::println("background color is {}, {}, {}", bg_color[0], bg_color[1], bg_color[2]);
+    std::println("background color is rgb({}, {}, {})", bg_color[2], bg_color[1], bg_color[0]);
     // calculate cell sizes and x, y position
     const double cell_width = (double)grid.mat_.cols / width;
     const double cell_height = (double)grid.mat_.rows / height;

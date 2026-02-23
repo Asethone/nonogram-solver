@@ -6,9 +6,7 @@
 
 /* *
  * TODO:
- * - fill colored nonograms
- * - handle custom background colors
- * ? recognize paper pattern instead of noise reduction
+ * - handle nonograms with white borders
  * */
 
 int main(int argc, char* argv[]) {
