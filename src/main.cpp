@@ -1,4 +1,4 @@
-#include <print>
+#include <iostream>
 #include <cxxopts.hpp>
 
 #include "controls.h"
@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
 
     // help
     if (args.count("help")) {
-        std::println("{}", options.help());
+        std::cout << options.help() << std::endl;
         return 0;
     }
 
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     bool is_paint_mode = args["paint"].as<bool>();
 
     if (!is_capture_mode && !is_paint_mode) {
-        std::println("No mode options were specified. Going with multimode.");
+        std::cout << "No mode options were specified. Going with multimode." << std::endl;
         is_capture_mode = true;
         is_paint_mode = true;
     }
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
     // check if device is connected
     if (!adb::checkDevice()) {
-        std::println("Error: please connect your device via USB.");
+        std::cout << "Error: please connect your device via USB." << std::endl;
         return 1;
     }
 

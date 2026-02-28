@@ -1,5 +1,6 @@
 #include "image.h"
 
+#include <iostream>
 #include <opencv2/imgcodecs.hpp>
 
 #include "controls.h"
@@ -312,7 +313,7 @@ Image Image::extractPalette(std::vector<cv::Vec3b>& palette_colors, std::vector<
     working_rect = toAbsoluteRect(working_rect, bounding_box_palette);
     // count the number of vetical lines
     int color_count = getNumberOfVerticalLines(vertical) - 1;
-    std::println("number of colors: {}", color_count);
+    std::cout << "number of colors: " << color_count << std::endl;
     // create palette image
     cv::Mat palette = mat_(working_rect);
     // fill the vector of colors

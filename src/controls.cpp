@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <format>
+#include <iostream>
 #include <thread>
 
 #include "asio.hpp"
@@ -121,9 +122,9 @@ public:
                 }
                 std::this_thread::sleep_for(100ms);
             }
-            std::println("connected to scrcpy sever.");
+            std::cout << "connected to scrcpy sever." << std::endl;
         } catch (std::exception& e) {
-            std::println("scrcpy server connection error: {}", e.what());
+            std::cout << "scrcpy server connection error: " << e.what() << std::endl;
         }
     }
 
